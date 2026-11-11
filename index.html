@@ -181,89 +181,163 @@ return `<div class="world"><div><strong>${name}</strong><div class="sub">${date}
 }
 updateWorld();setInterval(updateWorld,1000);
 
+
 // Timer and alarm
-let remaining=300,timerRunning=false,timerEnd=0,timerInterval=null;
-let audioContext=null,alarmNodes=null,alarmActive=false;
+let remaining=300;
+let timerRunning=false;
+let timerEnd=0;
+let timerInterval=null;
+let audioContext=null;
+let alarmNodes=null;
+let alarmActive=false;
+
+function getInputTime(){
+  const min=Math.max(0,Math.min(999,
+    Math.floor(Number($('minutes').value)||0)));
+  const sec=Math.max(0,Math.min(59,
+    Math.floor(Number($('seconds').value)||0)));
+  $('minutes').value=min;
+  $('seconds').value=sec;
+  return min*60+sec;
+}
 
 function timerDisplay(){
-$('timerDisplay').textContent=pad(Math.floor(remaining/60))+':'+pad(remaining%60);
+  $('timerDisplay').textContent=
+    pad(Math.floor(remaining/60))+':'+pad(remaining%60);
 }
-function stopTimer(){
-timerRunning=false;clearInterval(timerInterval);timerInterval=null;
-$('timerStart').textContent='スタート';
-}
-async function prepareAudio(){
-try{
-const AC=window.AudioContext||window.webkitAudioContext;
-if(!AC)return;
-if(!audioContext)audioContext=new AC();
-if(audioContext.state==='suspended')await audioContext.resume();
-}catch(e){}
-}
-function startAlarm(){
-if(alarmActive)return;
-alarmActive=true;
-$('alarmScreen').classList.add('show');
-document.body.classList.remove('light');
-document.body.classList.add('alarm');
-if(!audioContext)return;
-try{
-const osc=audioContext.createOscillator();
-const lfo=audioContext.createOscillator();
-const lfoGain=audioContext.createGain();
-const gain=audioContext.createGain();
-osc.type='sawtooth';lfo.type='sine';
-osc.frequency.value=850;lfo.frequency.value=.8;
-lfoGain.gain.value=350;gain.gain.value=.13;
-lfo.connect(lfoGain);lfoGain.connect(osc.frequency);
-osc.connect(gain);gain.connect(audioContext.destination);
-osc.start();lfo.start();
-alarmNodes={osc,lfo,gain,lfoGain};
-}catch(e){}
-}
-function stopAlarm(){
-alarmActive=false;
-$('alarmScreen').classList.remove('show');
-document.body.classList.remove('alarm');
-if(alarmNodes){
-try{
-alarmNodes.osc.stop();alarmNodes.lfo.stop();
-alarmNodes.osc.disconnect();alarmNodes.lfo.disconnect();
-alarmNodes.gain.disconnect();alarmNodes.lfoGain.disconnect();
-}catch(e){}
-alarmNodes=null;
-}
-}
-$('alarmStop').onclick=()=>{
-stopAlarm();$('timerMessage').textContent='警報を停止しました';
-};
-function timerTick(){
-remaining=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));
-timerDisplay();
-if(remaining===0){
-stopTimer();$('timerMessage').textContent='TIME OVER';
-startAlarm();
-}
-}
-$('timerStart').onclick=async()=>{
-await prepareAudio();
-if(timerRunning){stopTimer();$('timerMessage').textContent='一時停止中';return}
-if(remaining<=0){
-remaining=Math.min(59999,Math.max(0,(Number($('minutes').value)||0)*60+(Number($('seconds').value)||0)));
-}
-if(remaining<=0){$('timerMessage').textContent='時間を設定してください';return}
-timerRunning=true;timerEnd=Date.now()+remaining*1000;
-$('timerStart').textContent='一時停止';
-$('timerMessage').textContent='カウントダウン中';
-timerTick();timerInterval=setInterval(timerTick,100);
-};
-$('timerReset').onclick=()=>{
-stopTimer();stopAlarm();
-remaining=Math.min(59999,Math.max(0,(Number($('minutes').value)||0)*60+(Number($('seconds').value)||0)));
-timerDisplay();$('timerMessage').textContent='リセットしました';
-};
-timerDisplay();
 
+function stopTimer(){
+  timerRunning=false;
+  clearInterval(timerInterval);
+  timerInterval=null;
+  $('timerStart').textContent='スタート';
+}
+
+// 入力変更を即時反映
+function updateTimerInput(){
+  if(timerRunning)return;
+  remaining=getInputTime();
+  timerDisplay();
+  $('timerMessage').textContent='設定時間：'+
+    pad(Math.floor(remaining/60))+':'+pad(remaining%60);
+}
+
+$('minutes').addEventListener('input',updateTimerInput);
+$('seconds').addEventListener('input',updateTimerInput);
+
+async function prepareAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioContext)audioContext=new AC();
+    if(audioContext.state==='suspended')await audioContext.resume();
+  }catch(e){}
+}
+
+function startAlarm(){
+  if(alarmActive)return;
+  alarmActive=true;
+  $('alarmScreen').classList.add('show');
+  document.body.classList.remove('light');
+  document.body.classList.add('alarm');
+
+  if(!audioContext)return;
+  try{
+    const osc=audioContext.createOscillator();
+    const lfo=audioContext.createOscillator();
+    const lfoGain=audioContext.createGain();
+    const gain=audioContext.createGain();
+
+    osc.type='sawtooth';
+    lfo.type='sine';
+    osc.frequency.value=850;
+    lfo.frequency.value=.8;
+    lfoGain.gain.value=350;
+    gain.gain.value=.13;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start();
+    lfo.start();
+
+    alarmNodes={osc,lfo,gain,lfoGain};
+  }catch(e){}
+}
+
+function stopAlarm(){
+  alarmActive=false;
+  $('alarmScreen').classList.remove('show');
+  document.body.classList.remove('alarm');
+
+  if(alarmNodes){
+    try{
+      alarmNodes.osc.stop();
+      alarmNodes.lfo.stop();
+      alarmNodes.osc.disconnect();
+      alarmNodes.lfo.disconnect();
+      alarmNodes.gain.disconnect();
+      alarmNodes.lfoGain.disconnect();
+    }catch(e){}
+    alarmNodes=null;
+  }
+}
+
+$('alarmStop').onclick=()=>{
+  stopAlarm();
+  $('timerMessage').textContent='警報を停止しました';
+};
+
+function timerTick(){
+  remaining=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));
+  timerDisplay();
+
+  if(remaining===0){
+    stopTimer();
+    $('timerMessage').textContent='TIME OVER';
+    startAlarm();
+  }
+}
+
+$('timerStart').onclick=async()=>{
+  await prepareAudio();
+
+  if(timerRunning){
+    remaining=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));
+    stopTimer();
+    timerDisplay();
+    $('timerMessage').textContent='一時停止中';
+    return;
+  }
+
+  if(remaining<=0){
+    remaining=getInputTime();
+  }
+
+  if(remaining<=0){
+    $('timerMessage').textContent='時間を設定してください';
+    return;
+  }
+
+  timerRunning=true;
+  timerEnd=Date.now()+remaining*1000;
+  $('timerStart').textContent='一時停止';
+  $('timerMessage').textContent='カウントダウン中';
+
+  timerTick();
+  timerInterval=setInterval(timerTick,100);
+};
+
+$('timerReset').onclick=()=>{
+  stopTimer();
+  stopAlarm();
+  remaining=getInputTime();
+  timerDisplay();
+  $('timerMessage').textContent='リセットしました';
+};
+
+timerDisplay();
 // Stopwatch
 let swRunning=false,swStart=0,swElapsed=0,swInterval=null,laps=[];
 function swValue(){return swElapsed+(swRunning?Date.now()-swStart:0)}
