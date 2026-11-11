@@ -4,29 +4,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MONDAI CLOCK 3.0</title>
+<title>MONDAI CLOCK 3.2</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:#101827;color:white;transition:.3s}
 body.light{background:#eef2f8;color:#172033}
+body.alarm{animation:flash .45s infinite alternate}
+@keyframes flash{from{background:#390000;color:white}to{background:#ff1010;color:white}}
 .app{max-width:650px;margin:auto;padding:22px}
 header{display:flex;justify-content:space-between;align-items:center}
 .logo{font-size:22px;font-weight:900;letter-spacing:4px;color:#60a5fa}
 button,input{font:inherit}
 button{cursor:pointer;border:1px solid #8885;border-radius:12px;padding:12px 16px;background:#8882;color:inherit}
+button svg{width:18px;height:18px;vertical-align:middle}
+.theme-btn{display:flex;align-items:center;gap:8px}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:28px 0 18px;background:#8882;padding:5px;border-radius:14px}
-.tabs button{font-size:12px;padding:12px 2px;border:0}
+.tabs button{font-size:12px;padding:12px 2px;border:0;display:flex;align-items:center;justify-content:center;gap:5px;flex-direction:column}
+.tabs button svg{width:21px;height:21px}
 .tabs button.active,.primary{background:#2563eb;color:white}
 .panel{display:none;text-align:center;padding:25px 8px}
 .panel.active{display:block}
 .time{font-size:clamp(48px,12vw,78px);font-weight:300;letter-spacing:-3px;font-variant-numeric:tabular-nums}
 .sub{opacity:.6;font-size:13px;letter-spacing:2px}
-.card{background:#8882;border:1px solid #8883;padding:17px;border-radius:14px;margin-top:20px}
+.card,.world{background:#8882;border:1px solid #8883;padding:15px;border-radius:14px;margin-top:12px}
 .controls{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin-top:24px}
 input{width:85px;padding:12px;border-radius:10px;border:1px solid #8888;background:#8882;color:inherit;text-align:center}
-.world{display:flex;justify-content:space-between;align-items:center;text-align:left;padding:15px;background:#8882;border-radius:12px;margin:9px 0}
+.world{display:flex;justify-content:space-between;align-items:center;text-align:left}
 .citytime{font-size:20px;font-variant-numeric:tabular-nums}
 footer{display:flex;justify-content:space-between;border-top:1px solid #8885;margin-top:25px;padding-top:18px;font-size:11px;opacity:.5}
+#alarmScreen{display:none;position:fixed;inset:0;z-index:9999;background:#d00000;color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;animation:alarmFlash .45s infinite alternate}
+#alarmScreen.show{display:flex}
+@keyframes alarmFlash{from{background:#650000}to{background:#ff0000}}
+#alarmScreen h1{font-size:clamp(38px,10vw,65px);margin:15px 0}
+#alarmScreen p{font-weight:bold;letter-spacing:3px}
+#alarmStop{background:white;color:#c00;font-size:17px;font-weight:800;padding:17px 25px;border:0;margin-top:25px;display:flex;align-items:center;gap:10px}
+.alarmIcon{width:72px;height:72px;animation:shake .3s infinite alternate}
+@keyframes shake{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
 </style>
 </head>
 <body>
@@ -36,14 +49,26 @@ footer{display:flex;justify-content:space-between;border-top:1px solid #8885;mar
 <div class="logo">MONDAI</div>
 <div class="sub">DIGITAL CLOCK SYSTEM</div>
 </div>
-<button id="theme">☀️ ライト</button>
+<button id="theme" class="theme-btn"></button>
 </header>
 
 <div class="tabs">
-<button class="active" data-tab="clock">時計</button>
-<button data-tab="timer">タイマー</button>
-<button data-tab="world">世界時計</button>
-<button data-tab="stopwatch">ストップ<br>ウォッチ</button>
+<button class="active" data-tab="clock">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+時計
+</button>
+<button data-tab="timer">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/></svg>
+タイマー
+</button>
+<button data-tab="world">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+世界時計
+</button>
+<button data-tab="stopwatch">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3M18 5l2-2"/></svg>
+ストップウォッチ
+</button>
 </div>
 
 <section class="panel active" id="clock">
@@ -52,7 +77,7 @@ footer{display:flex;justify-content:space-between;border-top:1px solid #8885;mar
 <div id="mainDate"></div>
 <div class="card" style="text-align:left">
 <div class="sub">TODAY</div>
-<div id="day" style="font-size:25px;margin-top:8px"></div>
+<div id="day" style="font-size:25px"></div>
 <div class="sub">UTC +09:00 · Asia/Tokyo</div>
 </div>
 </section>
@@ -69,6 +94,7 @@ footer{display:flex;justify-content:space-between;border-top:1px solid #8885;mar
 <button id="timerReset">リセット</button>
 </div>
 <p id="timerMessage">時間を設定してください</p>
+<div class="sub">TIME OVER / EMERGENCY ALERT</div>
 </section>
 
 <section class="panel" id="world">
@@ -87,183 +113,184 @@ footer{display:flex;justify-content:space-between;border-top:1px solid #8885;mar
 <div id="laps"></div>
 </section>
 
-<footer>
-<span>MONDAI LIMITED</span>
-<span>VERSION 3.0</span>
-</footer>
+<footer><span>MONDAI LIMITED</span><span>VERSION 3.2</span></footer>
+</div>
+
+<div id="alarmScreen">
+<svg class="alarmIcon" viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M32 7 59 55H5L32 7Z"/>
+<path d="M32 23v14M32 45v1"/>
+</svg>
+<h1>TIME OVER</h1>
+<p>EMERGENCY ALERT</p>
+<p>タイマーが終了しました</p>
+<button id="alarmStop">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+警報を停止する
+</button>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
 
-// タブ切り替え
+const sun=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>`;
+const moon=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg>`;
+
+let light=false;
+$('theme').innerHTML=sun+' ライト';
+$('theme').onclick=()=>{
+light=!light;
+document.body.classList.toggle('light',light);
+$('theme').innerHTML=(light?moon:sun)+(light?' ダーク':' ライト');
+};
+
+// Tabs
 document.querySelectorAll('[data-tab]').forEach(btn=>{
-btn.addEventListener('click',()=>{
+btn.onclick=()=>{
 document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
 document.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('active'));
 $(btn.dataset.tab).classList.add('active');
 btn.classList.add('active');
-});
-});
-
-// ライト・ダーク
-let light=false;
-$('theme').onclick=()=>{
-light=!light;
-document.body.classList.toggle('light',light);
-$('theme').textContent=light?'🌙 ダーク':'☀️ ライト';
 };
+});
 
-// デジタル時計
+// Clock
 function updateClock(){
 const d=new Date();
-$('mainTime').textContent=
-[pad(d.getHours()),pad(d.getMinutes()),pad(d.getSeconds())].join(':');
-$('mainDate').textContent=
-d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
-$('day').textContent=
-['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'][d.getDay()];
+$('mainTime').textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(pad).join(':');
+$('mainDate').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+$('day').textContent=['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'][d.getDay()];
 }
-setInterval(updateClock,1000);
-updateClock();
+updateClock();setInterval(updateClock,1000);
 
-// 世界時計
+// World clock
 const zones=[
-['東京','Asia/Tokyo'],
-['ロンドン','Europe/London'],
-['ニューヨーク','America/New_York'],
-['パリ','Europe/Paris'],
-['シンガポール','Asia/Singapore'],
-['シドニー','Australia/Sydney'],
+['東京','Asia/Tokyo'],['ロンドン','Europe/London'],
+['ニューヨーク','America/New_York'],['パリ','Europe/Paris'],
+['シンガポール','Asia/Singapore'],['シドニー','Australia/Sydney'],
 ['ロサンゼルス','America/Los_Angeles']
 ];
 function updateWorld(){
 const now=new Date();
 $('cities').innerHTML=zones.map(([name,zone])=>{
-const time=new Intl.DateTimeFormat('ja-JP',{
-timeZone:zone,hour:'2-digit',minute:'2-digit',
-second:'2-digit',hour12:false
-}).format(now);
-const date=new Intl.DateTimeFormat('ja-JP',{
-timeZone:zone,month:'numeric',day:'numeric',weekday:'short'
-}).format(now);
-return `<div class="world">
-<div><strong>${name}</strong><div class="sub">${date}</div></div>
-<div class="citytime">${time}</div>
-</div>`;
+const time=new Intl.DateTimeFormat('ja-JP',{timeZone:zone,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);
+const date=new Intl.DateTimeFormat('ja-JP',{timeZone:zone,month:'numeric',day:'numeric',weekday:'short'}).format(now);
+return `<div class="world"><div><strong>${name}</strong><div class="sub">${date}</div></div><div class="citytime">${time}</div></div>`;
 }).join('');
 }
-updateWorld();
-setInterval(updateWorld,1000);
+updateWorld();setInterval(updateWorld,1000);
 
-// タイマー
-let remaining=300;
-let timerRunning=false;
-let timerEnd=0;
-let timerInterval=null;
+// Timer and alarm
+let remaining=300,timerRunning=false,timerEnd=0,timerInterval=null;
+let audioContext=null,alarmNodes=null,alarmActive=false;
 
 function timerDisplay(){
-$('timerDisplay').textContent=
-pad(Math.floor(remaining/60))+':'+pad(remaining%60);
+$('timerDisplay').textContent=pad(Math.floor(remaining/60))+':'+pad(remaining%60);
 }
 function stopTimer(){
-timerRunning=false;
-clearInterval(timerInterval);
-timerInterval=null;
+timerRunning=false;clearInterval(timerInterval);timerInterval=null;
 $('timerStart').textContent='スタート';
 }
+async function prepareAudio(){
+try{
+const AC=window.AudioContext||window.webkitAudioContext;
+if(!AC)return;
+if(!audioContext)audioContext=new AC();
+if(audioContext.state==='suspended')await audioContext.resume();
+}catch(e){}
+}
+function startAlarm(){
+if(alarmActive)return;
+alarmActive=true;
+$('alarmScreen').classList.add('show');
+document.body.classList.remove('light');
+document.body.classList.add('alarm');
+if(!audioContext)return;
+try{
+const osc=audioContext.createOscillator();
+const lfo=audioContext.createOscillator();
+const lfoGain=audioContext.createGain();
+const gain=audioContext.createGain();
+osc.type='sawtooth';lfo.type='sine';
+osc.frequency.value=850;lfo.frequency.value=.8;
+lfoGain.gain.value=350;gain.gain.value=.13;
+lfo.connect(lfoGain);lfoGain.connect(osc.frequency);
+osc.connect(gain);gain.connect(audioContext.destination);
+osc.start();lfo.start();
+alarmNodes={osc,lfo,gain,lfoGain};
+}catch(e){}
+}
+function stopAlarm(){
+alarmActive=false;
+$('alarmScreen').classList.remove('show');
+document.body.classList.remove('alarm');
+if(alarmNodes){
+try{
+alarmNodes.osc.stop();alarmNodes.lfo.stop();
+alarmNodes.osc.disconnect();alarmNodes.lfo.disconnect();
+alarmNodes.gain.disconnect();alarmNodes.lfoGain.disconnect();
+}catch(e){}
+alarmNodes=null;
+}
+}
+$('alarmStop').onclick=()=>{
+stopAlarm();$('timerMessage').textContent='警報を停止しました';
+};
 function timerTick(){
 remaining=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));
 timerDisplay();
 if(remaining===0){
-stopTimer();
-$('timerMessage').textContent='⏰ 時間になりました！';
+stopTimer();$('timerMessage').textContent='TIME OVER';
+startAlarm();
 }
 }
-$('timerStart').onclick=()=>{
-if(timerRunning){
-stopTimer();
-$('timerMessage').textContent='一時停止中';
-return;
-}
+$('timerStart').onclick=async()=>{
+await prepareAudio();
+if(timerRunning){stopTimer();$('timerMessage').textContent='一時停止中';return}
 if(remaining<=0){
-remaining=Math.min(59999,
-Math.max(0,(Number($('minutes').value)||0)*60+
-(Number($('seconds').value)||0)));
+remaining=Math.min(59999,Math.max(0,(Number($('minutes').value)||0)*60+(Number($('seconds').value)||0)));
 }
-if(remaining<=0){
-$('timerMessage').textContent='時間を設定してください';
-return;
-}
-timerRunning=true;
-timerEnd=Date.now()+remaining*1000;
+if(remaining<=0){$('timerMessage').textContent='時間を設定してください';return}
+timerRunning=true;timerEnd=Date.now()+remaining*1000;
 $('timerStart').textContent='一時停止';
 $('timerMessage').textContent='カウントダウン中';
-timerTick();
-timerInterval=setInterval(timerTick,100);
+timerTick();timerInterval=setInterval(timerTick,100);
 };
 $('timerReset').onclick=()=>{
-stopTimer();
-remaining=Math.min(59999,
-Math.max(0,(Number($('minutes').value)||0)*60+
-(Number($('seconds').value)||0)));
-timerDisplay();
-$('timerMessage').textContent='リセットしました';
+stopTimer();stopAlarm();
+remaining=Math.min(59999,Math.max(0,(Number($('minutes').value)||0)*60+(Number($('seconds').value)||0)));
+timerDisplay();$('timerMessage').textContent='リセットしました';
 };
 timerDisplay();
 
-// ストップウォッチ
-let swRunning=false;
-let swStart=0;
-let swElapsed=0;
-let swInterval=null;
-let laps=[];
-function swValue(){
-return swElapsed+(swRunning?Date.now()-swStart:0);
-}
+// Stopwatch
+let swRunning=false,swStart=0,swElapsed=0,swInterval=null,laps=[];
+function swValue(){return swElapsed+(swRunning?Date.now()-swStart:0)}
 function swDraw(){
 const n=swValue();
-$('swDisplay').textContent=
-pad(Math.floor(n/60000))+':'+
-pad(Math.floor(n/1000)%60)+'.'+
-pad(Math.floor(n/10)%100);
+$('swDisplay').textContent=pad(Math.floor(n/60000))+':'+pad(Math.floor(n/1000)%60)+'.'+pad(Math.floor(n/10)%100);
 }
 $('swStart').onclick=()=>{
 if(swRunning){
-swElapsed=swValue();
-swRunning=false;
-clearInterval(swInterval);
+swElapsed=swValue();swRunning=false;clearInterval(swInterval);
 $('swStart').textContent='再開';
 }else{
-swStart=Date.now();
-swRunning=true;
+swStart=Date.now();swRunning=true;
 $('swStart').textContent='一時停止';
-clearInterval(swInterval);
-swInterval=setInterval(swDraw,30);
+clearInterval(swInterval);swInterval=setInterval(swDraw,30);
 }
 swDraw();
 };
 $('swLap').onclick=()=>{
 if(!swRunning)return;
 const n=swValue();
-laps.unshift(
-pad(Math.floor(n/60000))+':'+
-pad(Math.floor(n/1000)%60)+'.'+
-pad(Math.floor(n/10)%100)
-);
-$('laps').innerHTML=laps.map((v,i)=>
-`<div class="world"><span>ラップ ${laps.length-i}</span><strong>${v}</strong></div>`
-).join('');
+laps.unshift(pad(Math.floor(n/60000))+':'+pad(Math.floor(n/1000)%60)+'.'+pad(Math.floor(n/10)%100));
+$('laps').innerHTML=laps.map((v,i)=>`<div class="world"><span>ラップ ${laps.length-i}</span><strong>${v}</strong></div>`).join('');
 };
 $('swReset').onclick=()=>{
-swRunning=false;
-clearInterval(swInterval);
-swElapsed=0;
-laps=[];
-$('swStart').textContent='スタート';
-$('laps').innerHTML='';
-swDraw();
+swRunning=false;clearInterval(swInterval);swElapsed=0;laps=[];
+$('swStart').textContent='スタート';$('laps').innerHTML='';swDraw();
 };
 swDraw();
 </script>
